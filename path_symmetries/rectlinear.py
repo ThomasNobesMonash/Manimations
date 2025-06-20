@@ -29,8 +29,22 @@ class Scene2D(Scene):
         self.play(Write(start_label), Write(goal_label), run_time=0.4)
         self.wait(0.5)
         
-        # Animate a colored line from node 0 -> 6 -> 8, offsetting to avoid overlap with S/G
-        path_indices = [0, 6, 8]
+        # Define path as a sequence of (dx, dy) moves from the start node (top-left)
+        dx, dy = 2, 2
+        top_moves = [(0, 0, 0), (0, dy, 0), (dx, 0, 0),  (0, 0, 0)] 
+        bot_moves = [(0, 0, 0), (dx, 0, 0), (0, dy, 0),  (0, 0, 0)] 
+        # Convert moves to grid indices
+        def add_move(curr, move):
+            x, y, z = curr + move
+            return x, y, z
+
+        curr_pos = (0, 0, 0)
+        print("Current position:", curr_pos)
+        path_indices = []
+        for move in top_moves:
+            curr_pos = add_move(np.array(curr_pos), np.array(move))
+            idx = int(curr_pos[1]) * grid_dims + int(curr_pos[0])
+            path_indices.append(idx)
         path_points = [grid[i].get_center() for i in path_indices]
 
         # Offset amount (fraction of square side length)
