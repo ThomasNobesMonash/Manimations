@@ -118,11 +118,13 @@ class MultipleGridsScene2D(MovingCameraScene):
         spacing = frame_width * 0.9 / (num_grids)
         
         grid2 = create_grid(slen, 4)
-        grid2.move_to(np.array([base_x + spacing * np.sqrt(len(grid)), 0, 0]))
+        new_x = grid.get_center()[0] + grid.width / 2 + spacing + grid2.width / 2
+        grid2.move_to(np.array([new_x, 0, 0]))
         grid2.shift([0, base_y - grid2.get_bottom()[1], 0])
 
         grid3 = create_grid(slen, 5)
-        grid3.move_to(np.array([base_x * spacing * np.sqrt(len(grid)) + np.sqrt(len(grid2)), 0, 0]))
+        new_x = grid2.get_center()[0] + grid2.width / 2 + spacing + grid3.width / 2
+        grid3.move_to(np.array([new_x, 0, 0]))
         grid3.shift([0, base_y - grid3.get_bottom()[1], 0])
         
         self.camera.frame.move_to(grid.get_center())
@@ -149,7 +151,7 @@ class MultipleGridsScene2D(MovingCameraScene):
         num_paths = len(moves)
         
         # Calculate new center: move grid to far left, keep vertical center
-        left_x = 2.7*(grid.get_center()[0] + (frame_width / 2 - grid_width / 2))
+        left_x = (grid.get_center()[0] + grid3.get_center()[0]) / 2
         new_center = np.array([left_x, grid.get_center()[1], 0])
         self.play(
             frame.animate.set(width=frame_width * 3).move_to(new_center),
