@@ -154,10 +154,6 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
         new_center = np.array([left_x, grid.get_center()[1], 0])
         self.camera.frame.move_to(new_center)
         self.camera.frame.set(width=frame_width * 3)
-        # self.play(
-        #     frame.animate.set(width=frame_width * 3).move_to(new_center),
-        #     run_time=1
-        # )
         
         self.add(grid2)
         self.add(grid3)
@@ -176,56 +172,94 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
 
         self.wait(1)
         
-        # self.play(
-        #     FadeOut(start_label),
-        #     FadeOut(goal_label),
-        #     FadeOut(start_label2),
-        #     FadeOut(goal_label2),
-        #     FadeOut(start_label3),
-        #     FadeOut(goal_label3),
-        #     run_time=1
-        # )
+        self.play(
+            FadeOut(start_label),
+            FadeOut(goal_label),
+            FadeOut(start_label2),
+            FadeOut(goal_label2),
+            FadeOut(start_label3),
+            FadeOut(goal_label3),
+            run_time=1
+        )
         
-        # all_grids = [grid, grid2, grid3]
-        # base_x = grid.get_center()[0]
-        # base_y = grid.get_bottom()[1]
-        # # Create and add more grids up to 100x100
-        # max_grid_size = 7
-        # for n in range(6, max_grid_size + 1):
-        #     new_grid = create_grid(slen, n)
-        #     # Position each grid to the right of the previous one
-        #     prev_grid = all_grids[-1]
-            
-        #     # Calculate new_x by summing widths and spacing of all previous grids
-        #     new_x = all_grids[0].get_center()[0]
-        #     # Position new_grid to the right of the previous grid with even spacing
-        #     prev_grid = all_grids[-1]
-        #     new_x = prev_grid.get_center()[0] + prev_grid.width / 2 + spacing + new_grid.width / 2
-        #     new_grid.move_to(np.array([new_x, 0, 0]))
-        #     # Align bottom
-        #     new_grid.shift([0, base_y - new_grid.get_bottom()[1], 0])
-        #     self.add(new_grid)
-        #     all_grids.append(new_grid)
-            
-        #     # grid2 = create_grid(slen, 4)
-        #     # grid2.move_to(np.array([base_x + spacing * np.sqrt(len(grid)), 0, 0]))
-        #     # grid2.shift([0, base_y - grid2.get_bottom()[1], 0])
-
-        #     # grid3 = create_grid(slen, 5)
-        #     # grid3.move_to(np.array([base_x * spacing * np.sqrt(len(grid)) + np.sqrt(len(grid2)), 0, 0]))
-        #     # grid3.shift([0, base_y - grid3.get_bottom()[1], 0])
-        # for i, grid in enumerate(all_grids):
-        #     self.add(grid)
+        all_grids = [grid, grid2, grid3]
+        base_x = grid.get_center()[0]
+        base_y = grid.get_bottom()[1]
+        # Create and add more grids up to NxN
+        max_grid_size = 10
+        for n in range(6, max_grid_size + 1):
+            new_grid = create_grid(slen, n)
+            # Position each grid to the right of the previous one
+            prev_grid = all_grids[-1]
+            # Calculate new_x by summing widths and spacing of all previous grids
+            new_x = all_grids[0].get_center()[0]
+            # Position new_grid to the right of the previous grid with even spacing
+            prev_grid = all_grids[-1]
+            new_x = prev_grid.get_center()[0] + prev_grid.width / 2 + spacing + new_grid.width / 2
+            new_grid.move_to(np.array([new_x, 0, 0]))
+            # Align bottom
+            new_grid.shift([0, base_y - new_grid.get_bottom()[1], 0])
+            if n == 6:
+                self.play(
+                    Create(new_grid),
+                    run_time=1)
+            else:
+                self.add(new_grid)
+            all_grids.append(new_grid)
         
-        # # for i, grid in enumerate(all_grids):
-        # #     # Get the number of paths for this grid
-        # #     moves = get_all_moves(int(np.sqrt(len(grid))))
-        # #     num_paths = len(moves)
-        # #     # Create a number label for the grid
-        # #     number = Integer(num_paths, color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5)
-        # #     digit_width = Integer(1).scale(2).get_width()
-        # #     number.shift([-digit_width / 2, 0, 0])
-        # #     self.add(number)
+        self.wait(1.5)
+        for i, grid in enumerate(all_grids):
+            if i < 3:
+                continue
+            self.add(grid)
+            number = Text("?", color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5)
+            self.add(number)
+            grid_label = Tex(f"{int(np.sqrt(len(grid)))}x{int(np.sqrt(len(grid)))})", color=WHITE).scale(2).next_to(grid, UP, buff=0.5)
+            self.add(grid_label)
+        
+        left_x = (all_grids[0].get_left()[0] + all_grids[-1].get_right()[0]) / 2
+        new_center = np.array([left_x, grid.get_center()[1], 0])
+        total_width = all_grids[-1].get_right()[0] - all_grids[0].get_left()[0] + slen  # Add slen for padding
+        # Gradually speed up, then slow down at the end using rate_func
+        self.play(
+            frame.animate.set(width=total_width * 1.1).move_to(new_center),
+            run_time=2,
+            rate_func=lambda t: smooth(t, inflection=0.7)  # Much faster at start, snappier
+        )
+        
+        self.wait(2)
+        # Shift camera frame down so grids are near the top
+        top_y = all_grids[0].get_top()[1]
+        frame_height = self.camera.frame.get_height()
+        # Place the top of the grids a bit below the top of the frame (e.g., 10% margin)
+        target_y = top_y - frame_height * 0.2
+        self.play(
+            self.camera.frame.animate.move_to([new_center[0], target_y, 0]),
+            run_time=1
+        )
+        
+        # Emphasize (flash/grow) each number below the grid
+        for i, grid in enumerate(all_grids):
+            # Find the number object below this grid
+            if i == 0:
+                number = Integer(1, color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5)
+            elif i == 1:
+                number = Integer(20, color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5).shift([-digit_width / 2, 0, 0])
+            elif i == 2:
+                number = Integer(70, color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5).shift([-digit_width / 2, 0, 0])
+            else:
+                number = Text("?", color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5)
+            # Make the animation snappier and speed up over time
+            scale_up_time = max(0.15, 0.3 - i * 0.02)
+            scale_down_time = max(0.1, 0.2 - i * 0.015)
+            self.play(
+                number.animate.scale(1.5).set_color(YELLOW),
+                run_time=scale_up_time
+            )
+            self.play(
+                number.animate.scale(2/3).set_color(BLUE_B),
+                run_time=scale_down_time
+            )
         
         # self.camera.frame.set(width=frame_width * 10)
         # self.wait(1)
