@@ -151,7 +151,7 @@ class MultipleGridsScene2D(MovingCameraScene):
         num_paths = len(moves)
         
         # Calculate new center: move grid to far left, keep vertical center
-        left_x = (grid.get_center()[0] + grid3.get_center()[0]) / 2
+        left_x = (grid.get_left()[0] + grid3.get_right()[0]) / 2
         new_center = np.array([left_x, grid.get_center()[1], 0])
         self.play(
             frame.animate.set(width=frame_width * 3).move_to(new_center),

@@ -150,7 +150,7 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
         
         # Calculate new center: move grid to far left, keep vertical center
         # Center camera so that all three grids are centered in the screen
-        left_x = (grid.get_center()[0] + grid3.get_center()[0]) / 2
+        left_x = (grid.get_left()[0] + grid3.get_right()[0]) / 2
         new_center = np.array([left_x, grid.get_center()[1], 0])
         self.camera.frame.move_to(new_center)
         self.camera.frame.set(width=frame_width * 3)
