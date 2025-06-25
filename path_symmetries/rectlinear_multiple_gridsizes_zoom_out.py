@@ -102,6 +102,9 @@ def get_unique_color(base_colors, i, total):
 
 class MultGridsZoomOutScene2D(MovingCameraScene):
     def construct(self):
+        myTemplate = TexTemplate()
+        myTemplate.add_to_preamble(r"\usepackage{mathdots}")
+        
         slen = 2
         grid = create_grid(slen, 3)
         
@@ -161,14 +164,14 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
         self.add(grid_label, grid_label2, grid_label3)
         self.add(start_label2, goal_label2, start_label3, goal_label3)
         
-        number = Integer(1, color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5)
+        number = Integer(6, color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5)
         self.add(number)
         digit_width = Integer(1).scale(2).get_width()
         number = Integer(20, color=BLUE_B).scale(2).next_to(grid2, DOWN, buff=0.5).shift([- digit_width / 2, 0, 0])
         self.add(number)
         digit_width = Integer(1).scale(2).get_width()
         number = Integer(70, color=BLUE_B).scale(2).next_to(grid3, DOWN, buff=0.5).shift([- digit_width / 2, 0, 0])
-        self.add(number)  
+        self.add(number)
 
         self.wait(1)
         
@@ -208,13 +211,15 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
             all_grids.append(new_grid)
         
         self.wait(1.5)
+        all_grid_labels = [grid_label, grid_label2, grid_label3]
         for i, grid in enumerate(all_grids):
             if i < 3:
                 continue
             self.add(grid)
             number = Text("?", color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5)
             self.add(number)
-            grid_label = Tex(f"{int(np.sqrt(len(grid)))}x{int(np.sqrt(len(grid)))})", color=WHITE).scale(2).next_to(grid, UP, buff=0.5)
+            grid_label = Tex(f"{int(np.sqrt(len(grid)))}$\\times${int(np.sqrt(len(grid)))}", color=WHITE).scale(2).next_to(grid, UP, buff=0.5)
+            all_grid_labels.append(grid_label)
             self.add(grid_label)
         
         left_x = (all_grids[0].get_left()[0] + all_grids[-1].get_right()[0]) / 2
@@ -229,14 +234,14 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
         
         self.wait(2)
         # Shift camera frame down so grids are near the top
-        top_y = all_grids[0].get_top()[1]
-        frame_height = self.camera.frame.get_height()
-        # Place the top of the grids a bit below the top of the frame (e.g., 10% margin)
-        target_y = top_y - frame_height * 0.2
-        self.play(
-            self.camera.frame.animate.move_to([new_center[0], target_y, 0]),
-            run_time=1
-        )
+        # top_y = all_grids[0].get_top()[1]
+        # frame_height = self.camera.frame.get_height()
+        # # Place the top of the grids a bit below the top of the frame (e.g., 10% margin)
+        # target_y = top_y - frame_height * 0.2
+        # self.play(
+        #     self.camera.frame.animate.move_to([new_center[0], target_y, 0]),
+        #     run_time=1
+        # )
         
         # Emphasize (flash/grow) each number below the grid
         for i, grid in enumerate(all_grids):
@@ -249,17 +254,142 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
                 number = Integer(70, color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5).shift([-digit_width / 2, 0, 0])
             else:
                 number = Text("?", color=BLUE_B).scale(2).next_to(grid, DOWN, buff=0.5)
-            # Make the animation snappier and speed up over time
+        
+        # Fade out all grids except the first, second, and last, along with their grid_labels and numbers
+        grids_to_fade = [g for i, g in enumerate(all_grids) if i not in (0, 1, len(all_grids) - 1)]
+        grid_labels_to_fade = []
+        numbers_to_fade = [
+            n for i, g in enumerate(all_grids)
+            for n in self.mobjects
+            if (isinstance(n, Text) or isinstance(n, Integer))
+            and n.get_center()[1] < g.get_bottom()[1]
+            and i not in [0, 1, len(all_grids) - 1]
+        ]
+        for i, g in enumerate(all_grids):
+            if i not in [0, 1, len(all_grids) - 1]:
+                # Find the grid label above this grid
+                label = next((m for m in self.mobjects if isinstance(m, Tex) and m.get_center()[0] == g.get_center()[0] and m.get_center()[1] > g.get_top()[1]), None)
+                if label:
+                    grid_labels_to_fade.append(label)
+        # Remove grids at indices not in (0, 1, len(all_grids) - 1)
+        for i in sorted([i for i in range(len(all_grids)) if i not in [0, 1, len(all_grids) - 1]], reverse=True):
+            del all_grids[i]
+        number1 = Integer(6, color=BLUE_B).scale(2).next_to(all_grids[0], DOWN, buff=0.5)
+        number2 = Integer(20, color=BLUE_B).scale(2).next_to(all_grids[1], DOWN, buff=0.5)
+        self.add(number1)
+        self.add(number2)
+        last_number = Text("?", color=BLUE_B).scale(2).next_to(all_grids[-1], DOWN, buff=0.5)
+        self.add(last_number)
+        # Fade out all numbers
+        self.play(
+            *[FadeOut(g) for g in grids_to_fade],
+            *[FadeOut(l) for l in grid_labels_to_fade],
+            *[FadeOut(n) for n in numbers_to_fade],
+            run_time=1
+        )
+        
+        self.wait(1)
+        
+        # Move all_grids[-1] (the largest grid), its label, and its number to be next to all_grids[1]
+        # Calculate the new x position: to the right of all_grids[1] with same spacing
+        right_grid = all_grids[1]
+        moved_grid = all_grids[-1]
+        new_grid = create_grid(slen, 6)
+        new_x = right_grid.get_center()[0] + right_grid.width / 2 + spacing + new_grid.width / 2
+        new_grid.move_to(np.array([new_x, new_grid.get_center()[1], 0]))
+        new_label= Tex("$NxN$").scale(2).next_to(new_grid, UP, buff=0.5)
+        new_label.next_to(new_grid, UP, buff=0.5)
+        new_number = Text("?", color=BLUE_B).scale(2).next_to(new_grid, DOWN, buff=0.5)
+        # Add dots along last row and column
+        n = 6
+        dots = []
+        for i in range(n - 1):
+            idx = (n - 1) * n + i
+            dot = Tex(r"$\vdots$").scale(1.5).move_to(new_grid[idx].get_center())
+            dots.append(dot)
+        for i in range(n - 1):
+            idx = i * n + (n - 1)
+            dot = Tex(r"$\dots$").scale(1.5).move_to(new_grid[idx].get_center())
+            dots.append(dot)
+        dots.append(Tex(r"$\iddots$", tex_template=myTemplate).scale(1.5).move_to(new_grid[n * n - 1].get_center()))
+        moved_label = all_grid_labels[-1]
+        # Animate transition from moved_grid to new_grid
+        self.play(
+            Transform(moved_grid, new_grid),
+            Transform(moved_label, new_label),
+            Transform(last_number, new_number),
+            run_time=1
+        )
+
+        # Zoom in camera to fit the three grids
+        left_x = all_grids[0].get_left()[0]
+        right_x = all_grids[2].get_right()[0]
+        new_center = np.array([(left_x + right_x) / 2, all_grids[0].get_center()[1], 0])
+        total_width = right_x - left_x + slen  # Add slen for padding
+
+        self.play(
+            self.camera.frame.animate.set(width=total_width * 1.1).move_to(new_center),
+            run_time=1
+        )
+        # Add dots to the scene
+        self.play(*[FadeIn(dot) for dot in dots], run_time=0.5)
+        
+        outline = Square(side_length=slen * n, color=YELLOW, stroke_width=10)
+        outline.move_to(new_grid.get_center())
+        numbers = [number1, number2, last_number]
+        for i, number in enumerate(numbers):
             scale_up_time = max(0.15, 0.3 - i * 0.02)
             scale_down_time = max(0.1, 0.2 - i * 0.015)
             self.play(
                 number.animate.scale(1.5).set_color(YELLOW),
                 run_time=scale_up_time
             )
-            self.play(
-                number.animate.scale(2/3).set_color(BLUE_B),
-                run_time=scale_down_time
-            )
-        
-        # self.camera.frame.set(width=frame_width * 10)
-        # self.wait(1)
+            if i < 2:
+                self.play(
+                    number.animate.scale(2/3).set_color(BLUE_B),
+                    run_time=scale_down_time
+                )
+            else:
+                self.play(
+                    number.animate.scale(2/3).set_color(YELLOW),
+                    # Animate a yellow outline square around the last grid
+                    run_time=scale_down_time
+                )
+                # Animate outline creation starting from the bottom-left corner
+                outline.set_stroke(opacity=0)  # Hide initially
+                self.add(outline)
+                # Get the four corners in order: bottom-left, bottom-right, top-right, top-left
+                corners = [
+                    outline.get_corner(DL),
+                    outline.get_corner(DR),
+                    outline.get_corner(UR),
+                    outline.get_corner(UL),
+                    outline.get_corner(DL)
+                ]
+                animated_outline = VMobject()
+                animated_outline.set_stroke(color=YELLOW, width=10)
+                animated_outline.set_points_as_corners([corners[0], corners[0]])
+                self.add(animated_outline)
+                def update_outline(mob, alpha):
+                    n = len(corners) - 1
+                    total_length = sum(np.linalg.norm(corners[i+1] - corners[i]) for i in range(n))
+                    target_length = total_length * alpha
+                    points = [corners[0]]
+                    length = 0
+                    for i in range(n):
+                        seg = corners[i+1] - corners[i]
+                        seg_len = np.linalg.norm(seg)
+                        if length + seg_len < target_length:
+                            points.append(corners[i+1])
+                            length += seg_len
+                        else:
+                            remain = target_length - length
+                            if seg_len > 0:
+                                points.append(corners[i] + seg / seg_len * remain)
+                            break
+                    mob.set_points_as_corners(points)
+                self.play(UpdateFromAlphaFunc(animated_outline, update_outline), run_time=2)
+                outline.set_stroke(opacity=1)
+                self.remove(animated_outline)
+
+        self.wait(1)
