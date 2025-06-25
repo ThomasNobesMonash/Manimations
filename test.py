@@ -2,9 +2,12 @@ from manim import *
 
 class demoScene(Scene):
     def construct(self):
-        astar_text = Tex(r"The A$^\ast$ Algorithm", font_size=92)
-        astar_text.to_corner(UP + LEFT)
-        self.play(Write(astar_text), run_time=1)
+        astar_text = Tex(r"Pathfinding Fundamentals", font_size=86)
+        # astar_text = Tex(r"The A$^\ast$ Algorithm", font_size=92)
+        astar_text.move_to(UP)
+        # astar_text.to_corner(UP + LEFT)
+        self.play(Write(astar_text), run_time=1.5)
+        self.wait(1)
         
         # astar_text = Tex(r"The A$^\ast$ Algorithm")
         # astar_text.shift(UP)
