@@ -107,6 +107,7 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
         
         slen = 2
         grid = create_grid(slen, 3)
+        init_grid = grid
         
         # Calculate spacing based on frame width and number of grids
         num_grids = 3
@@ -391,5 +392,11 @@ class MultGridsZoomOutScene2D(MovingCameraScene):
                 self.play(UpdateFromAlphaFunc(animated_outline, update_outline), run_time=2)
                 outline.set_stroke(opacity=1)
                 self.remove(animated_outline)
-
+                
         self.wait(1)
+        
+        # word_eq = Tex("Number of paths = ?").scale(1.5).move_to(init_grid.get_bottom() + [0, -6, 0])
+        # self.play(
+        #     Write(word_eq),
+        #     run_time=1
+        # )
